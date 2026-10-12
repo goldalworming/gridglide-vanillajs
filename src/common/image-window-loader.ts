@@ -1,5 +1,5 @@
 import { CellSet } from "../internal/data-grid/cell-set.js";
-import { throttle } from "../common/lodash.js";
+import { throttle } from "./lodash.js";
 import { packColRowToNumber, unpackNumberToColRow, WindowingTrackerBase } from "./render-state-provider.js";
 import type { ImageWindowLoader } from "../internal/data-grid/image-window-loader-interface.js";
 

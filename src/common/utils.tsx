@@ -1,5 +1,5 @@
 import * as React from "../runtime/react.js";
-import { debounce } from "../common/lodash.js";
+import { debounce } from "./lodash.js";
 import { deepEqual } from "./support.js";
 
 export function useEventListener<K extends keyof HTMLElementEventMap>(

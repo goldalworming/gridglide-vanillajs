@@ -139,6 +139,8 @@ npm run build
 npm run demo      # demo/index.html, demo/cells.html, demo/bench.html
 ```
 
+To pull in changes from upstream Glide Data Grid, see [SYNCING.md](SYNCING.md).
+
 ## License
 
 MIT. This is a derivative of Glide Data Grid by typeguard, Inc.

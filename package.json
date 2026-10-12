@@ -30,7 +30,8 @@
         "typecheck": "tsc -p tsconfig.json --noEmit",
         "test": "vitest",
         "demo": "node build-bundle.mjs && npx --yes http-server . -p 8080 -o /demo/",
-        "prepare": "npm run build"
+        "prepare": "npm run build",
+        "sync-upstream": "node scripts/sync-upstream.mjs"
     },
     "dependencies": {
         "canvas-hypertxt": "^1.0.3",
