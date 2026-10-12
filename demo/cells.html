@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>gridglide-vanillajs extra cells</title>
+        <!-- the article cell loads Toast UI Editor on demand (optional peer dependency) -->
+        <script type="importmap">
+            { "imports": { "@toast-ui/editor": "https://cdn.jsdelivr.net/npm/@toast-ui/editor@3.2.2/+esm" } }
+        </script>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@toast-ui/editor@3.2.2/dist/toastui-editor.css" />
+        <style>
+            html,
+            body {
+                margin: 0;
+                height: 100%;
+                font-family: system-ui, sans-serif;
+            }
+            body {
+                display: flex;
+                flex-direction: column;
+            }
+            header {
+                padding: 8px 16px;
+                border-bottom: 1px solid #ddd;
+            }
+            #grid {
+                flex: 1;
+                min-height: 0;
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <strong>Extra cells</strong> (single-file <code>&lt;script&gt;</code> bundle, global <code>GlideGrid</code>)
+            <span id="log"></span>
+        </header>
+        <div id="grid"></div>
+
+        <script src="../dist/gridglide.iife.js"></script>
+        <script>
+            const { DataEditor, GridCellKind, cells } = GlideGrid;
+            const log = msg => (document.getElementById("log").textContent = " · " + msg);
+
+            const possibleTags = [
+                { tag: "Bug", color: "#ff4d4d35" },
+                { tag: "Feature", color: "#35f8ff35" },
+                { tag: "Enhancement", color: "#48ff5735" },
+                { tag: "First Issue", color: "#436fff35" },
+                { tag: "PR", color: "#e0ff3235" },
+            ];
+
+            // edited values live here: [col][row]
+            const edits = {};
+            const get = (col, row, fallback) => edits[col]?.[row] ?? fallback;
+
+            const wave = (row, phase) => Array.from({ length: 15 }, (_, i) => Math.sin((i + row) / 2 + phase) * 40);
+
+            const columns = [
+                "Stars",
+                "Sparkline area",
+                "Sparkline bar",
+                "Tags",
+                "User",
+                "Dropdown",
+                "Range",
+                "Article",
+                "Spinner",
+                "Date",
+                "Links",
+                "Button",
+                "Tree",
+                "Multi select",
+            ].map(title => ({ title, width: 150 }));
+
+            function getCellContent([col, row]) {
+                const custom = (data, extra = {}) => ({
+                    kind: GridCellKind.Custom,
+                    allowOverlay: true,
+                    copyData: "",
+                    data,
+                    ...extra,
+                });
+                switch (col) {
+                    case 0:
+                        return custom(get(col, row, { kind: "star-cell", label: "Test", rating: row % 6 }));
+                    case 1:
+                        return custom(
+                            { kind: "sparkline-cell", values: wave(row, 0), color: "#77c4c4", yAxis: [-50, 50] },
+                            { allowOverlay: false }
+                        );
+                    case 2:
+                        return custom(
+                            { kind: "sparkline-cell", values: wave(row, 1), color: "#D98466", graphKind: "bar", yAxis: [-50, 50] },
+                            { allowOverlay: false }
+                        );
+                    case 3:
+                        return custom(
+                            get(col, row, { kind: "tags-cell", possibleTags, tags: [possibleTags[row % 5].tag, possibleTags[(row + 2) % 5].tag] })
+                        );
+                    case 4:
+                        return custom(
+                            get(col, row, { kind: "user-profile-cell", initial: "B", tint: "#F1D86E", name: `User ${row}`, image: `https://i.pravatar.cc/40?img=${(row % 70) + 1}` })
+                        );
+                    case 5:
+                        return custom(
+                            get(col, row, { kind: "dropdown-cell", allowedValues: [null, "Good", "Better", { value: "best", label: "Best" }], value: "Good" })
+                        );
+                    case 6:
+                        return custom(get(col, row, { kind: "range-cell", min: 10, max: 30, value: 10 + (row % 21), step: 1, label: `${row % 21}`, measureLabel: "30" }));
+                    case 7:
+                        return custom(get(col, row, { kind: "article-cell", markdown: `## Article ${row}\n\nSome **text**.` }));
+                    case 8:
+                        return custom({ kind: "spinner-cell" }, { allowOverlay: false });
+                    case 9: {
+                        const d = get(col, row, { kind: "date-picker-cell", date: new Date(2024, 0, 1 + row), format: "date" });
+                        return custom({ ...d, displayDate: d.date?.toISOString().split("T")[0] ?? "" });
+                    }
+                    case 10:
+                        return custom(
+                            { kind: "links-cell", underlineOffset: 6, links: [{ title: "First link", onClick: () => log("link 1") }, { title: "Second", onClick: () => log("link 2") }] },
+                            { allowOverlay: false }
+                        );
+                    case 11:
+                        return custom(
+                            { kind: "button-cell", backgroundColor: ["transparent", "#6572ffee"], color: ["accentColor", "accentFg"], borderColor: "#6572ffa0", borderRadius: 9, title: "View Details", onClick: () => log(`button row ${row}`) },
+                            { readonly: true, themeOverride: { baseFontStyle: "700 12px" } }
+                        );
+                    case 12:
+                        return custom(
+                            { kind: "tree-view-cell", canOpen: true, depth: row % 3, isOpen: row % 7 === 0, text: "Row " + row, onClickOpener: () => log(`opener ${row}`) },
+                            { readonly: true }
+                        );
+                    case 13:
+                        return custom(
+                            get(col, row, {
+                                kind: "multi-select-cell",
+                                values: ["glide", "data"],
+                                options: [
+                                    { value: "glide", color: "#ffc38a", label: "Glide" },
+                                    { value: "data", color: "#ebfdea", label: "Data" },
+                                    { value: "grid", color: "teal", label: "Grid" },
+                                ],
+                                allowCreation: true,
+                            })
+                        );
+                }
+            }
+
+            const grid = new DataEditor(document.getElementById("grid"), {
+                columns,
+                rows: 200,
+                rowHeight: 44,
+                width: "100%",
+                height: "100%",
+                customRenderers: cells.allCells,
+                getCellContent,
+                onCellEdited: ([col, row], value) => {
+                    (edits[col] ??= {})[row] = value.data;
+                    log(`edited ${col},${row}`);
+                },
+            });
+            window.grid = grid;
+        </script>
+    </body>
+</html>

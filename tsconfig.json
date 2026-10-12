@@ -1,0 +1,31 @@
+{
+    "compilerOptions": {
+        "allowSyntheticDefaultImports": true,
+        "esModuleInterop": true,
+        "jsx": "react",
+        "jsxFactory": "React.createElement",
+        "jsxFragmentFactory": "React.Fragment",
+        "moduleResolution": "Node16",
+        "module": "Node16",
+        "noImplicitAny": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "skipLibCheck": true,
+        "verbatimModuleSyntax": true,
+        "strict": true,
+        "target": "ES2022",
+        "lib": ["ES2022", "DOM", "DOM.Iterable"],
+        "types": ["node", "vitest/globals"],
+        "noEmit": true,
+        "paths": {
+            "react": ["./src/runtime/react.ts"],
+            "react-dom/test-utils": ["./test/shims/react-dom-test-utils.ts"],
+            "@testing-library/react": ["./test/shims/testing-library-react.ts"],
+            "@testing-library/react-hooks": ["./test/shims/testing-library-react-hooks.ts"],
+            "lodash/noop.js": ["./test/shims/lodash-noop.ts"]
+        }
+    },
+    "include": ["src/**/*.ts", "src/**/*.tsx", "test/**/*.ts", "test/**/*.tsx"],
+    // copied verbatim from upstream packages/cells, which never type-checked its tests
+    "exclude": ["test/cells-extra/**"]
+}

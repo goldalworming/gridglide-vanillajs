@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>gridglide-vanillajs demo</title>
+        <style>
+            html,
+            body {
+                margin: 0;
+                height: 100%;
+                font-family: system-ui, sans-serif;
+            }
+            body {
+                display: flex;
+                flex-direction: column;
+            }
+            header {
+                padding: 8px 16px;
+                display: flex;
+                gap: 8px;
+                align-items: center;
+                flex-wrap: wrap;
+                border-bottom: 1px solid #ddd;
+            }
+            #grid {
+                flex: 1;
+                min-height: 0;
+            }
+            #log {
+                font: 12px monospace;
+                color: #555;
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <strong>gridglide-vanillajs</strong>
+            <button id="dark">Toggle dark theme</button>
+            <button id="search">Search (Ctrl+F)</button>
+            <button id="scroll">Scroll to row 5000</button>
+            <button id="append">Append row</button>
+            <span id="log"></span>
+        </header>
+        <div id="grid"></div>
+
+        <script type="module">
+            import { DataEditor, GridCellKind, CompactSelection } from "../dist/bundle/index.js";
+
+            const log = msg => (document.getElementById("log").textContent = msg);
+
+            const rows = [];
+            const makeRow = i => ({
+                name: `Person ${i}`,
+                age: 20 + (i % 50),
+                active: i % 3 === 0,
+                avatar: `https://i.pravatar.cc/80?img=${(i % 70) + 1}`,
+                tags: ["alpha", "beta", "gamma"].slice(0, (i % 3) + 1),
+                site: `https://example.com/${i}`,
+                notes: `**Row ${i}**: _markdown_ content`,
+                color: ["red", "green", "blue"][i % 3],
+            });
+            for (let i = 0; i < 10_000; i++) rows.push(makeRow(i));
+
+            let columns = [
+                { title: "Name", id: "name", width: 160, group: "Identity", icon: "headerString", hasMenu: true },
+                { title: "Age", id: "age", width: 80, group: "Identity", icon: "headerNumber" },
+                { title: "Active", id: "active", width: 80, group: "Status", icon: "headerBoolean" },
+                { title: "Avatar", id: "avatar", width: 80, group: "Status", icon: "headerImage" },
+                { title: "Tags", id: "tags", width: 200, group: "Details", icon: "headerArray" },
+                { title: "Site", id: "site", width: 200, group: "Details", icon: "headerUri" },
+                { title: "Notes", id: "notes", width: 220, group: "Details", icon: "headerMarkdown" },
+                { title: "Color (custom editor)", id: "color", width: 180, group: "Details" },
+            ];
+
+            function getCellContent([col, row]) {
+                const r = rows[row];
+                switch (columns[col].id) {
+                    case "name":
+                        return { kind: GridCellKind.Text, data: r.name, displayData: r.name, allowOverlay: true };
+                    case "age":
+                        return { kind: GridCellKind.Number, data: r.age, displayData: String(r.age), allowOverlay: true };
+                    case "active":
+                        return { kind: GridCellKind.Boolean, data: r.active, allowOverlay: false };
+                    case "avatar":
+                        return { kind: GridCellKind.Image, data: [r.avatar], allowOverlay: true, readonly: true };
+                    case "tags":
+                        return { kind: GridCellKind.Bubble, data: r.tags, allowOverlay: true };
+                    case "site":
+                        return { kind: GridCellKind.Uri, data: r.site, allowOverlay: true };
+                    case "notes":
+                        return { kind: GridCellKind.Markdown, data: r.notes, allowOverlay: true };
+                    case "color":
+                        return {
+                            kind: GridCellKind.Text,
+                            data: r.color,
+                            displayData: r.color,
+                            allowOverlay: true,
+                            themeOverride: { textDark: r.color },
+                        };
+                }
+            }
+
+            function onCellEdited([col, row], value) {
+                const id = columns[col].id;
+                if (id === "active" || id === "name" || id === "age" || id === "site" || id === "notes" || id === "color") {
+                    rows[row][id] = value.data;
+                }
+            }
+
+            // A framework-agnostic editor: plain DOM, no React.
+            const colorEditor = (container, props) => {
+                const select = document.createElement("select");
+                for (const c of ["red", "green", "blue", "orange", "purple"]) select.add(new Option(c, c));
+                select.value = props.value.data;
+                select.style.margin = "8px";
+                select.addEventListener("change", () => {
+                    props.onFinishedEditing({ ...props.value, data: select.value, displayData: select.value });
+                });
+                container.append(select);
+                select.focus();
+                return {
+                    update: next => (props = next),
+                    destroy: () => log("color editor closed"),
+                };
+            };
+
+            const right = document.createElement("div");
+            right.textContent = "rightElement";
+            right.style.cssText = "padding: 8px; color: #888; font-size: 12px;";
+
+            let dark = false;
+            const darkTheme = {
+                accentColor: "#8c96ff",
+                accentLight: "rgba(202, 206, 255, 0.253)",
+                textDark: "#ffffff",
+                textMedium: "#b8b8b8",
+                textLight: "#a0a0a0",
+                textBubble: "#ffffff",
+                bgIconHeader: "#b8b8b8",
+                fgIconHeader: "#000000",
+                textHeader: "#a1a1a1",
+                textHeaderSelected: "#000000",
+                bgCell: "#16161b",
+                bgCellMedium: "#202027",
+                bgHeader: "#212121",
+                bgHeaderHasFocus: "#474747",
+                bgHeaderHovered: "#404040",
+                bgGroupHeader: "#1b1b1f",
+                bgGroupHeaderHovered: "#2a2a30",
+                textGroupHeader: "#a1a1a1",
+                bgBubble: "#212121",
+                bgBubbleSelected: "#000000",
+                bgSearchResult: "#423c24",
+                borderColor: "rgba(225,225,225,0.2)",
+                drilldownBorder: "rgba(225,225,225,0.4)",
+                linkColor: "#4F5DFF",
+                headerFontStyle: "bold 14px",
+                baseFontStyle: "13px",
+                fontFamily: "Inter, Roboto, -apple-system, BlinkMacSystemFont, avenir next, avenir, segoe ui, helvetica neue, helvetica, Ubuntu, noto, arial, sans-serif",
+            };
+
+            const grid = new DataEditor(document.getElementById("grid"), {
+                columns,
+                rows: rows.length,
+                getCellContent,
+                onCellEdited,
+                width: "100%",
+                height: "100%",
+                rowMarkers: "both",
+                freezeColumns: 1,
+                smoothScrollX: true,
+                smoothScrollY: true,
+                getCellsForSelection: true,
+                onPaste: true,
+                fillHandle: true,
+                keybindings: { search: true },
+                rightElement: right,
+                trailingRowOptions: { hint: "New row...", sticky: true, tint: true },
+                onRowAppended: () => {
+                    rows.push(makeRow(rows.length));
+                    grid.setProps({ rows: rows.length });
+                },
+                onColumnResize: (column, newSize) => {
+                    columns = columns.map(c => (c === column ? { ...c, width: newSize } : c));
+                    grid.setProps({ columns });
+                },
+                onColumnMoved: (from, to) => {
+                    const next = [...columns];
+                    const [moved] = next.splice(from, 1);
+                    next.splice(to, 0, moved);
+                    columns = next;
+                    grid.setProps({ columns });
+                },
+                onHeaderMenuClick: (col, bounds) => log(`menu for column ${columns[col].title} at ${bounds.x},${bounds.y}`),
+                onGridSelectionChange: sel => {
+                    grid.setProps({ gridSelection: sel });
+                    if (sel.current) log(`selected ${sel.current.cell.join(",")}`);
+                },
+                gridSelection: { columns: CompactSelection.empty(), rows: CompactSelection.empty() },
+                // as upstream, `location` counts the row-marker column, so the color column is 8 here
+                provideEditor: cell => (cell.location?.[0] === 8 ? { editor: colorEditor } : undefined),
+            });
+
+            document.getElementById("dark").onclick = () => {
+                dark = !dark;
+                document.body.style.background = dark ? "#16161b" : "";
+                grid.setProps({ theme: dark ? darkTheme : undefined });
+            };
+            document.getElementById("search").onclick = () => grid.setProps({ showSearch: !grid.props.showSearch, onSearchClose: () => grid.setProps({ showSearch: false }) });
+            document.getElementById("scroll").onclick = () => grid.scrollTo(0, 5000, "both", 0, 0, { vAlign: "center" });
+            document.getElementById("append").onclick = () => grid.appendRow(0);
+
+            window.grid = grid;
+        </script>
+    </body>
+</html>

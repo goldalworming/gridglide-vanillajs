@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>gridglide-vanillajs benchmarks</title>
+        <style>
+            html,
+            body {
+                margin: 0;
+                height: 100%;
+            }
+            #grid {
+                width: 100vw;
+                height: 100vh;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="grid"></div>
+        <script type="module">
+            import { DataEditor, GridCellKind } from "../dist/bundle/index.js";
+            import { SparklineCell } from "../dist/bundle/cells.js";
+            import { useAsyncDataSource } from "../dist/bundle/source.js";
+            import { makeBench } from "./bench.js";
+
+            window.bench = makeBench({
+                GridCellKind,
+                SparklineCell,
+                useAsyncDataSource,
+                mount: (el, props) => new DataEditor(el, props),
+            });
+            window.benchReady = true;
+        </script>
+    </body>
+</html>

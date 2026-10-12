@@ -1,0 +1,76 @@
+{
+    "name": "gridglide-vanillajs",
+    "version": "0.1.0",
+    "description": "Framework-agnostic vanilla JS port of Glide Data Grid",
+    "license": "MIT",
+    "type": "module",
+    "main": "dist/esm/index.js",
+    "module": "dist/esm/index.js",
+    "types": "dist/esm/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/esm/index.d.ts",
+            "import": "./dist/esm/index.js"
+        },
+        "./cells": {
+            "types": "./dist/esm/cells-extra/index.d.ts",
+            "import": "./dist/esm/cells-extra/index.js"
+        },
+        "./source": {
+            "types": "./dist/esm/source/index.d.ts",
+            "import": "./dist/esm/source/index.js"
+        }
+    },
+    "files": [
+        "dist"
+    ],
+    "sideEffects": false,
+    "scripts": {
+        "build": "tsc -p tsconfig.build.json && node build-bundle.mjs",
+        "typecheck": "tsc -p tsconfig.json --noEmit",
+        "test": "vitest",
+        "demo": "node build-bundle.mjs && npx --yes http-server . -p 8080 -o /demo/",
+        "prepare": "npm run build"
+    },
+    "dependencies": {
+        "canvas-hypertxt": "^1.0.3",
+        "marked": "^16.1.2"
+    },
+    "devDependencies": {
+        "@testing-library/dom": "^10.4.1",
+        "@testing-library/user-event": "^14.5.1",
+        "@toast-ui/editor": "^3.2.2",
+        "@types/node": "^22.0.0",
+        "esbuild": "^0.25.5",
+        "jsdom": "^26.1.0",
+        "typescript": "^5.8.3",
+        "vitest": "^0.34.6",
+        "vitest-canvas-mock": "^0.3.3"
+    },
+    "allowScripts": {
+        "esbuild@0.25.12": true,
+        "esbuild@0.21.5": true
+    },
+    "peerDependencies": {
+        "@toast-ui/editor": "^3.2.2"
+    },
+    "peerDependenciesMeta": {
+        "@toast-ui/editor": {
+            "optional": true
+        }
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/goldalworming/gridglide-vanillajs.git"
+    },
+    "homepage": "https://github.com/goldalworming/gridglide-vanillajs#readme",
+    "keywords": [
+        "data-grid",
+        "datagrid",
+        "canvas",
+        "table",
+        "spreadsheet",
+        "vanilla-js",
+        "glide-data-grid"
+    ]
+}
