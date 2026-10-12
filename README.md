@@ -10,16 +10,14 @@
 
 ## Install
 
-Install it straight from GitHub. The package builds itself during install:
-
 ```sh
-npm install github:goldalworming/gridglide-vanillajs
+npm install gridglide-vanillajs
 ```
 
-If you don't use a bundler, run `npm run build` in a clone and copy `dist/gridglide.iife.js` into your page. It exposes a global `GlideGrid`:
+Without a bundler, load the single-file build from a CDN. It exposes a global `GlideGrid`:
 
 ```html
-<script src="gridglide.iife.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gridglide-vanillajs/dist/gridglide.iife.js"></script>
 <script>
     const { DataEditor, GridCellKind } = GlideGrid;
 </script>
