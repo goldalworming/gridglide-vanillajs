@@ -137,7 +137,7 @@ npm run build
 npm run demo      # demo/index.html, demo/cells.html, demo/bench.html
 ```
 
-To pull in changes from upstream Glide Data Grid, see [SYNCING.md](SYNCING.md).
+To pull in changes from upstream Glide Data Grid, see [SYNCING.md](SYNCING.md). For testing the canvas grid, in this repo and in apps that use it, see [TESTING.md](TESTING.md).
 
 ## License
 
