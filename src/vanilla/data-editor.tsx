@@ -4,12 +4,16 @@ import { DataEditorAll, type DataEditorAllProps } from "../data-editor-all.js";
 import type { DataEditorRef } from "../data-editor/data-editor.js";
 import type { VanillaEditor } from "../internal/data-grid/data-grid-types.js";
 import { toNode } from "./foreign-node.js";
+import { fillSelectionEdits } from "./fill-paste.js";
+import { CompactSelection, type GridSelection } from "../internal/data-grid/data-grid-types.js";
 
 /**
  * Props of the vanilla {@link DataEditor}. Identical to Glide Data Grid's `DataEditorProps`, except:
  * - `rightElement` is a DOM node instead of a React node,
  * - `portalElement` replaces `portalElementRef`,
- * - editors (`provideEditor`, `imageEditorOverride`, custom renderers) use the {@link VanillaEditor} contract.
+ * - editors (`provideEditor`, `imageEditorOverride`, custom renderers) use the {@link VanillaEditor} contract,
+ * - F2 also opens the editor (part of the default `keybindings.activateCell`),
+ * - `fillSelectionOnPaste` adds spreadsheet-style fill on paste.
  * @category DataEditor
  */
 /** Props the grid itself consumes (what {@link DataEditorProps.enhance} receives and returns). */
@@ -35,14 +39,61 @@ export interface DataEditorProps extends Omit<DataEditorAllProps, "rightElement"
      * `enhance` must not be added or removed after construction.
      */
     readonly enhance?: (props: CoreDataEditorProps) => CoreDataEditorProps;
+    /**
+     * Pasting a single value into a multi-cell selection fills every selected cell, as in spreadsheets (upstream
+     * only writes the active cell). Those edits go straight to `onCellsEdited` / `onCellEdited`, skipping
+     * `onPaste`; larger pastes behave as upstream, except that an unset `onPaste` acts like `true` (split into
+     * cells). Has no effect when `onPaste` is `false`.
+     */
+    readonly fillSelectionOnPaste?: boolean;
 }
+
+/** Upstream's default `activateCell` plus F2, the spreadsheet "edit cell" key. */
+const defaultActivateCell = " |Enter|shift+Enter|F2";
+
+const emptySelection: GridSelection = {
+    columns: CompactSelection.empty(),
+    rows: CompactSelection.empty(),
+    current: undefined,
+};
 
 const Enhanced: React.FunctionComponent<{
     readonly props: CoreDataEditorProps;
     readonly enhance?: (props: CoreDataEditorProps) => CoreDataEditorProps;
+    readonly fillSelectionOnPaste?: boolean;
     readonly handle: { current: DataEditorRef | null };
 }> = p => {
-    const props = p.enhance === undefined ? p.props : p.enhance(p.props);
+    let props = p.enhance === undefined ? p.props : p.enhance(p.props);
+    const [ownSelection, setOwnSelection] = React.useState(emptySelection);
+
+    const activateCell = props.keybindings?.activateCell;
+    if (activateCell === undefined || activateCell === true) {
+        props = { ...props, keybindings: { ...props.keybindings, activateCell: defaultActivateCell } };
+    }
+
+    if (p.fillSelectionOnPaste === true && props.onPaste !== false) {
+        // the fill needs to read the selection, so hold it here when the caller leaves it uncontrolled
+        if (props.gridSelection === undefined && props.onGridSelectionChange === undefined) {
+            props = { ...props, gridSelection: ownSelection, onGridSelectionChange: setOwnSelection };
+        }
+        const current = props;
+        const onPaste = current.onPaste;
+        props = {
+            ...current,
+            onPaste: (target, values) => {
+                const edits = fillSelectionEdits(current, current.gridSelection, values);
+                if (edits === undefined) return typeof onPaste === "function" ? onPaste(target, values) : true;
+                if (edits.length > 0) {
+                    if (current.onCellsEdited?.(edits) !== true) {
+                        for (const e of edits) current.onCellEdited?.(e.location, e.value);
+                    }
+                    p.handle.current?.updateCells(edits.map(e => ({ cell: e.location })));
+                }
+                return false;
+            },
+        };
+    }
+
     return <DataEditorAll {...props} ref={p.handle} />;
 };
 
@@ -119,12 +170,13 @@ export class DataEditor implements DataEditorRef {
 
     private render() {
         if (this.destroyed) throw new Error("DataEditor has been destroyed");
-        const { rightElement, portalElement, enhance, ...rest } = this.currentProps;
+        const { rightElement, portalElement, enhance, fillSelectionOnPaste, ...rest } = this.currentProps;
         this.portalRef.current = portalElement ?? ensureDefaultPortal();
         this.root.render(
             <Enhanced
                 props={{ ...rest, rightElement: toNode(rightElement), portalElementRef: this.portalRef }}
                 enhance={enhance}
+                fillSelectionOnPaste={fillSelectionOnPaste}
                 handle={this.handle}
             />
         );

@@ -1,6 +1,16 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { fireEvent, act, screen } from "@testing-library/react";
-import { DataEditor, GridCellKind, type DataEditorProps, type GridCell, type Item, type TextCell } from "../src/index.js";
+import {
+    CompactSelection,
+    DataEditor,
+    GridCellKind,
+    type DataEditorProps,
+    type EditListItem,
+    type GridSelection,
+    type GridCell,
+    type Item,
+    type TextCell,
+} from "../src/index.js";
 import { flush } from "../src/runtime/react.js";
 import { prep, sendClick, standardBeforeEach } from "./test-utils.js";
 import { useMoveableColumns } from "../src/source/index.js";
@@ -172,5 +182,108 @@ describe("vanilla DataEditor", () => {
         // display column 0 now shows source column 1
         expect(screen.getByTestId("glide-cell-0-0").textContent).toBe("1,0");
         expect([...document.querySelectorAll("[role=columnheader]")].map(x => x.textContent)).toEqual(["B", "A"]);
+    });
+
+    test("F2 opens the editor by default and custom activateCell keybindings are kept", () => {
+        grid = new DataEditor(host, makeProps());
+        prep(false);
+        const canvas = screen.getByTestId("data-grid-canvas");
+        sendClick(canvas, pos(0, 0));
+        fireEvent.keyDown(canvas, { key: "F2" });
+        act(() => void vi.runAllTimers());
+        expect(document.querySelector("#portal textarea")).not.toBeNull();
+
+        grid.destroy();
+        grid = new DataEditor(host, makeProps({ keybindings: { activateCell: "Enter" } }));
+        prep(false);
+        const canvas2 = screen.getByTestId("data-grid-canvas");
+        sendClick(canvas2, pos(0, 0));
+        fireEvent.keyDown(canvas2, { key: "F2" });
+        act(() => void vi.runAllTimers());
+        expect(document.querySelector("#portal textarea")).toBeNull();
+    });
+
+    describe("fillSelectionOnPaste", () => {
+        let clipboard = "";
+        beforeEach(() => {
+            Object.defineProperty(navigator, "clipboard", {
+                value: { readText: async () => clipboard },
+                configurable: true,
+            });
+        });
+        afterEach(() => {
+            Reflect.deleteProperty(navigator, "clipboard");
+        });
+
+        const paste = async (text: string) => {
+            clipboard = text;
+            screen.getByTestId("data-grid-canvas").focus();
+            await act(async () => {
+                fireEvent.paste(window);
+                await vi.runAllTimersAsync();
+            });
+        };
+        const selection = (x: number, y: number, width: number, height: number): GridSelection => ({
+            columns: CompactSelection.empty(),
+            rows: CompactSelection.empty(),
+            current: { cell: [x, y], range: { x, y, width, height }, rangeStack: [{ x: 1, y: 5, width: 1, height: 1 }] },
+        });
+        const locations = (spy: { mock: { calls: (readonly [readonly EditListItem[]])[] } }) =>
+            spy.mock.calls.flatMap(c => c[0].map(e => e.location));
+
+        test("writes one value into every selected cell, rangeStack included, skipping readonly cells", async () => {
+            const onCellsEdited = vi.fn((_edits: readonly EditListItem[]) => true);
+            grid = new DataEditor(
+                host,
+                makeProps({
+                    fillSelectionOnPaste: true,
+                    onCellsEdited,
+                    gridSelection: selection(0, 0, 2, 2),
+                    getCellContent: ([col, row]: Item): GridCell => ({
+                        kind: GridCellKind.Text,
+                        data: "",
+                        displayData: "",
+                        allowOverlay: true,
+                        readonly: col === 1 && row === 1,
+                    }),
+                })
+            );
+            prep(false);
+            await paste("Z");
+            expect(locations(onCellsEdited)).toEqual([[0, 0], [1, 0], [0, 1], [1, 5]]);
+            expect(onCellsEdited.mock.calls[0][0][0].value).toMatchObject({ data: "Z" });
+        });
+
+        test("falls back to onCellEdited and tracks an uncontrolled selection", async () => {
+            const onCellEdited = vi.fn();
+            grid = new DataEditor(host, makeProps({ fillSelectionOnPaste: true, onCellEdited }));
+            prep(false);
+            const canvas = screen.getByTestId("data-grid-canvas");
+            sendClick(canvas, pos(0, 0));
+            sendClick(canvas, { ...pos(0, 2), shiftKey: true });
+            await paste("Z");
+            expect(onCellEdited.mock.calls.map(c => c[0])).toEqual([[0, 0], [0, 1], [0, 2]]);
+        });
+
+        test("larger pastes keep upstream behaviour", async () => {
+            const onCellsEdited = vi.fn((_edits: readonly EditListItem[]) => true);
+            const onPaste = vi.fn(() => true);
+            grid = new DataEditor(
+                host,
+                makeProps({ fillSelectionOnPaste: true, onCellsEdited, onPaste, gridSelection: selection(0, 0, 2, 2) })
+            );
+            prep(false);
+            await paste("a	b");
+            expect(onPaste).toHaveBeenCalledWith([0, 0], [["a", "b"]]);
+            expect(locations(onCellsEdited)).toEqual([[0, 0], [1, 0]]);
+        });
+
+        test("without the option only the active cell changes (upstream)", async () => {
+            const onCellsEdited = vi.fn((_edits: readonly EditListItem[]) => true);
+            grid = new DataEditor(host, makeProps({ onCellsEdited, onPaste: true, gridSelection: selection(0, 0, 2, 2) }));
+            prep(false);
+            await paste("Z");
+            expect(locations(onCellsEdited)).toEqual([[0, 0]]);
+        });
     });
 });
