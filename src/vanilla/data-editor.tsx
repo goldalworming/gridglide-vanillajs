@@ -12,7 +12,8 @@ import { CompactSelection, type GridSelection } from "../internal/data-grid/data
  * - `rightElement` is a DOM node instead of a React node,
  * - `portalElement` replaces `portalElementRef`,
  * - editors (`provideEditor`, `imageEditorOverride`, custom renderers) use the {@link VanillaEditor} contract,
- * - F2 also opens the editor (part of the default `keybindings.activateCell`),
+ * - F2 also opens the editor and Backspace also clears cells on every OS (defaults of `keybindings.activateCell` and
+ *   `keybindings.delete`),
  * - `fillSelectionOnPaste` adds spreadsheet-style fill on paste.
  * @category DataEditor
  */
@@ -48,8 +49,8 @@ export interface DataEditorProps extends Omit<DataEditorAllProps, "rightElement"
     readonly fillSelectionOnPaste?: boolean;
 }
 
-/** Upstream's default `activateCell` plus F2, the spreadsheet "edit cell" key. */
-const defaultActivateCell = " |Enter|shift+Enter|F2";
+/** Spreadsheet defaults on top of upstream: F2 edits a cell, Backspace clears it (upstream: macOS only). */
+const spreadsheetKeys = { activateCell: " |Enter|shift+Enter|F2", delete: "Backspace|Delete" } as const;
 
 const emptySelection: GridSelection = {
     columns: CompactSelection.empty(),
@@ -66,9 +67,11 @@ const Enhanced: React.FunctionComponent<{
     let props = p.enhance === undefined ? p.props : p.enhance(p.props);
     const [ownSelection, setOwnSelection] = React.useState(emptySelection);
 
-    const activateCell = props.keybindings?.activateCell;
-    if (activateCell === undefined || activateCell === true) {
-        props = { ...props, keybindings: { ...props.keybindings, activateCell: defaultActivateCell } };
+    for (const key of ["activateCell", "delete"] as const) {
+        const value = props.keybindings?.[key];
+        if (value === undefined || value === true) {
+            props = { ...props, keybindings: { ...props.keybindings, [key]: spreadsheetKeys[key] } };
+        }
     }
 
     if (p.fillSelectionOnPaste === true && props.onPaste !== false) {

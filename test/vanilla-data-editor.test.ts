@@ -203,6 +203,18 @@ describe("vanilla DataEditor", () => {
         expect(document.querySelector("#portal textarea")).toBeNull();
     });
 
+    test("Backspace clears the selected cell on every OS", () => {
+        const onCellsEdited = vi.fn((_edits: readonly EditListItem[]) => true);
+        grid = new DataEditor(host, makeProps({ onCellsEdited }));
+        prep(false);
+        const canvas = screen.getByTestId("data-grid-canvas");
+        sendClick(canvas, pos(1, 2));
+        fireEvent.keyDown(canvas, { key: "Backspace" });
+        act(() => void vi.runAllTimers());
+        expect(onCellsEdited).toHaveBeenCalledTimes(1);
+        expect(onCellsEdited.mock.calls[0][0].map(e => [e.location, (e.value as TextCell).data])).toEqual([[[1, 2], ""]]);
+    });
+
     describe("fillSelectionOnPaste", () => {
         let clipboard = "";
         beforeEach(() => {

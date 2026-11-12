@@ -125,7 +125,7 @@ export function glideGrid(node, props) {
 
 - Pass a DOM element for `rightElement` and `portalElement` (React used a node and a ref).
 - Custom editors use the container function shown above instead of React components.
-- F2 opens the cell editor, in addition to Enter and Space.
+- F2 opens the cell editor, in addition to Enter and Space. Backspace clears cells on every OS (upstream: macOS only).
 - With `fillSelectionOnPaste: true`, pasting a single value into a multi-cell selection fills every selected cell, as in spreadsheets. Upstream writes only the active cell.
 - Updates from `setProps` are batched. Call `grid.flush()` if you need them applied right away.
 - No CSS import is needed.
