@@ -197,6 +197,11 @@ export function drawGroups(
         ctx.fillStyle = groupTheme.textGroupHeader ?? groupTheme.textHeader;
         if (group !== undefined) {
             let drawX = x;
+            // gridglide-vanillajs: centered labels, as in merged spreadsheet headers
+            if (groupTheme.groupHeaderAlign === "center") {
+                const contentWidth = ctx.measureText(group.name).width + (group.icon === undefined ? 0 : 26);
+                drawX += Math.max(0, (w - contentWidth) / 2 - xPad);
+            }
             if (group.icon !== undefined) {
                 spriteManager.drawSprite(
                     group.icon,

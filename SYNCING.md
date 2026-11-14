@@ -47,6 +47,9 @@ Most files (`data-editor.tsx`, `data-grid.tsx`, every renderer) differ from upst
 | `src/internal/data-grid/data-grid-types.ts`, `data-grid-overlay-editor.tsx` | Editor contract: vanilla editors plus `RuntimeEditor`, rendered through `renderEditor()`. |
 | `src/cells/*-cell.tsx`, `src/cells-extra/cells/*-cell.tsx` | Built-in editors are wrapped in `runtimeEditor(...)`. |
 | `src/data-editor/data-editor.tsx`, `src/cells/number-cell.tsx` | `React.lazy`/`Suspense` replaced by direct imports. `process.env` replaced by `isDevMode()`. |
+| `src/data-editor/data-editor.tsx` | Adds the `editorSelectsAll` prop (used by the vanilla layer for caret-at-end editing). Bug fix: the deferred `focus()` does not take the focus back from an open cell editor (the runtime runs effects earlier than React). |
+| `src/internal/data-grid-overlay-editor/data-grid-overlay-editor.tsx` | Bug fix: only Enter/Tab/Escape schedule the editor finish, so Enter right after another key no longer drops the edit. |
+| `src/common/styles.ts`, `src/internal/data-grid/render/data-grid-render.header.ts` | Adds the `groupHeaderAlign` theme option (centered group labels; the vanilla layer defaults it to `"center"`). |
 | `src/data-editor/row-grouping-api.ts` | Adds the non-hook `createRowGrouping`. |
 | `test/cells.test.tsx` | The image-editor test uses the vanilla editor contract. |
 

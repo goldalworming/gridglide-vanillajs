@@ -68,6 +68,8 @@ export interface Theme {
     textGroupHeader?: string;
     bgGroupHeader?: string;
     bgGroupHeaderHovered?: string;
+    /** gridglide-vanillajs addition: alignment of group header labels (default "left"). */
+    groupHeaderAlign?: "left" | "center";
     textHeaderSelected: string;
     bgCell: string;
     bgCellMedium: string;

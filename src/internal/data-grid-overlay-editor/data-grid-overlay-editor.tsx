@@ -146,6 +146,10 @@ const DataGridOverlayEditor: React.FunctionComponent<DataGridOverlayEditorProps>
                 event.preventDefault();
                 customMotion.current = [event.shiftKey ? -1 : 1, 0];
                 save = true;
+            } else {
+                // Port fix: other keys must not schedule the finish below. When Enter came right after them (a scanner,
+                // autotype), their timer ran first, saw Enter's motion and closed the editor without saving.
+                return;
             }
 
             window.setTimeout(() => {

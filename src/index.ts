@@ -9,7 +9,8 @@ import MarkdownDivComponent from "./internal/markdown-div/markdown-div.js";
 import { GrowingEntry } from "./internal/growing-entry/growing-entry.js";
 import { toVanillaEditor } from "./vanilla/data-editor.js";
 
-export { DataEditor, toVanillaEditor, type DataEditorProps, type CoreDataEditorProps } from "./vanilla/data-editor.js";
+export { DataEditor, toVanillaEditor, type DataEditorProps, type CoreDataEditorProps, type RowMenuLabels, type SortMenuLabels } from "./vanilla/data-editor.js";
+export type { UndoStep } from "./vanilla/undo-redo.js";
 export type { DataEditorRef } from "./data-editor/data-editor.js";
 export { emptyGridSelection } from "./data-editor/data-editor.js";
 

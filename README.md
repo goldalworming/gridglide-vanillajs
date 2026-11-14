@@ -125,8 +125,14 @@ export function glideGrid(node, props) {
 
 - Pass a DOM element for `rightElement` and `portalElement` (React used a node and a ref).
 - Custom editors use the container function shown above instead of React components.
-- F2 opens the cell editor, in addition to Enter and Space. Backspace clears cells on every OS (upstream: macOS only).
-- With `fillSelectionOnPaste: true`, pasting a single value into a multi-cell selection fills every selected cell, as in spreadsheets. Upstream writes only the active cell.
+- With `fillSelectionOnPaste: true`, pasting a single value into a multi-cell selection fills every selected cell, and a copied block whose size divides the selected range evenly is repeated across it, as in Excel. Upstream writes only from the active cell.
+- With `undoRedo: true`, Ctrl/Cmd+Z undoes and Ctrl+Y or Ctrl/Cmd+Shift+Z redoes every grid edit (typing, paste, fill, Delete), as in Handsontable. Old values go back through `onCellsEdited`. For changes the grid does not make itself, such as inserting rows, use `grid.addUndoStep({ undo, redo })`. `grid.editCells(edits)` applies an undoable edit from code, and `grid.clearHistory()` resets the history, for example after loading other data. Upstream's `useUndoRedo` still works through `enhance`, but listens on `window`.
+- `validateCell` also checks pasted and filled values, not only what is typed into the cell editor. Rejected values are skipped.
+- Rows, as in Handsontable: give `onRowsInserted(at, count)` and `onRowsRemoved(rows)` (update your data and `rows` in them) to get `grid.insertRows()` / `grid.removeRows()`, a right-click menu with `rowContextMenu: true` (insert above/below, remove the selected rows; pass an object to change the labels), `minSpareRows`, and pastes that run past the last row adding rows. All of it is undoable; return a restore function from `onRowsRemoved` to have undo bring back fields that are not columns.
+- Sorting, as in spreadsheets: with `columnSort: true` every header gets a ▾ button with Sort A → Z / Z → A / Clear sort, while a click elsewhere on the header still selects the column. Sorting changes only the order rows are shown in (your data and its row indexes stay as they are) and is undoable; cell callbacks receive data rows, see `columnSort` in the API docs and `grid.dataRow()` / `grid.viewRow()`.
+- Group header labels are centered (theme `groupHeaderAlign: "left"` restores upstream).
+- A column dragged to a new width keeps it without an `onColumnResize` handler. The trailing empty line Excel and Sheets add to a copy is ignored.
+- Spreadsheet defaults: F2 opens the editor, Backspace clears cells on every OS, Ctrl/Cmd+D fills down, Ctrl/Cmd+R fills right, and an editor opened with Enter, F2 or a double-click puts the caret at the end of the text (`editorSelectsAll: true` restores upstream's select-all). Override any of them with `keybindings`.
 - Updates from `setProps` are batched. Call `grid.flush()` if you need them applied right away.
 - No CSS import is needed.
 

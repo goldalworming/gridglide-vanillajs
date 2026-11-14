@@ -579,6 +579,14 @@ export interface DataEditorProps extends Props, Pick<DataGridSearchProps, "image
     readonly editOnType?: boolean;
 
     /**
+     * Whether an editor opened without typing (Enter, F2, double-click) starts with its text selected, so the first key
+     * replaces it. Defaults to `true` as upstream. The vanilla `DataEditor` defaults it to `false`: the caret goes to
+     * the end, as in spreadsheets. (gridglide-vanillajs addition)
+     * @group Editing
+     */
+    readonly editorSelectsAll?: boolean;
+
+    /**
      * Used to fetch large amounts of cells at once. Used for copy/paste, if unset copy will not work.
      *
      * `getCellsForSelection` is called when the user copies a selection to the clipboard or the data editor needs to
@@ -826,6 +834,7 @@ const DataEditorImpl: React.ForwardRefRenderFunction<DataEditorRef, DataEditorPr
         onKeyUp: onKeyUpIn,
         keybindings: keybindingsIn,
         editOnType = true,
+        editorSelectsAll = true,
         onRowAppended,
         onColumnAppended,
         onColumnMoved,
@@ -1195,6 +1204,9 @@ const DataEditorImpl: React.ForwardRefRenderFunction<DataEditorRef, DataEditorPr
             gridRef.current?.focus();
         } else {
             window.requestAnimationFrame(() => {
+                // Port fix: the runtime runs effects before this frame (React runs them after), so a cell editor opened
+                // by the same click (double-click) already has the focus. Taking it back sent the typing to the grid.
+                if (document.activeElement?.closest(".gdg-clip-region") != null) return;
                 gridRef.current?.focus();
             });
         }
@@ -1474,7 +1486,7 @@ const DataEditorImpl: React.ForwardRefRenderFunction<DataEditorRef, DataEditorPr
                     content,
                     initialValue,
                     cell: [col, row],
-                    highlight: initialValue === undefined,
+                    highlight: editorSelectsAll && initialValue === undefined,
                     forceEditMode: initialValue !== undefined,
                     activation,
                 });
@@ -1491,7 +1503,7 @@ const DataEditorImpl: React.ForwardRefRenderFunction<DataEditorRef, DataEditorPr
                 gridRef.current?.damage([{ cell: gridSelection.current.cell }]);
             }
         },
-        [getMangledCellContent, gridSelection, mangledOnCellsEdited, setOverlaySimple]
+        [getMangledCellContent, gridSelection, mangledOnCellsEdited, setOverlaySimple, editorSelectsAll]
     );
 
     const focusOnRowFromTrailingBlankRow = React.useCallback(
@@ -1510,13 +1522,13 @@ const DataEditorImpl: React.ForwardRefRenderFunction<DataEditorRef, DataEditorPr
                 target: bounds,
                 content,
                 initialValue: undefined,
-                highlight: true,
+                highlight: editorSelectsAll,
                 cell: [col, row],
                 forceEditMode: true,
                 activation: { inputType: "keyboard", key: "Enter" },
             });
         },
-        [getMangledCellContent, scrollRef, setOverlaySimple]
+        [getMangledCellContent, scrollRef, setOverlaySimple, editorSelectsAll]
     );
 
     const scrollTo = React.useCallback<ScrollToFn>(
